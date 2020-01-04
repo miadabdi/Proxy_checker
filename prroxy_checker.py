@@ -7,7 +7,7 @@ import os
 from termcolor import colored
 
 #
-# only usable for http proxies in linux
+# only usable for http and https proxies in linux
 # requirments
 # python libraries : subprocess, termcolor
 # linux tool "curl"
@@ -15,6 +15,7 @@ from termcolor import colored
 
 
 test_file = 'https://download.microsoft.com/download/8/b/4/8b4addd8-e957-4dea-bdb8-c4e00af5b94b/NDP1.1sp1-KB867460-X86.exe'
+test_file = 'http://ipv4.download.thinkbroadband.com/10MB.zip'
 # we download a file by requests.get
 
 alive_proxies = []
@@ -50,13 +51,14 @@ def downloadFile(link, proxy):
     print("=====================================================")
     print(f"testing proxy: {proxy}")
     try:
-        r = requests.get(link, stream=True, proxies=proxy, timeout=20)
+        r = requests.get(link, stream=True, proxies=proxy, timeout=(20, 45))
         if r.status_code != 200:
             print(f"Error {r.status_code}")
             return
         print(f"Requests code status: {r.status_code}")
         total_length = r.headers.get('content-length')
         print(f"Total length {total_length}")
+        print(f"Response time: {r.elapsed.total_seconds()} seconds")
         if total_length != None:
             start = time.time()
             dl = 0
@@ -78,10 +80,11 @@ def downloadFile(link, proxy):
 
             time_spent = time.time() - start
             speed = dl / time_spent  # speed in bits
-            # print("proxy: ", proxy)
             print("overall speed: ", speed / 1024,
                   " Kbp    Time spent: ", time_spent, " seconds")
-        r.close()
+    except requests.exceptions.ReadTimeout as e:
+        print("ReadTimeout happend. This is related to test file not the proxy server. Try a different test file")
+        print(e)
     except Exception as e:
         print(f"Error accured:  {e}")
 
@@ -108,4 +111,5 @@ with concurrent.futures.ThreadPoolExecutor() as executer:
 print("Alive proxies are: ", alive_proxies)
 
 for proxy in alive_proxies:
-    downloadFile(test_file, {'http': proxy})
+    downloadFile(test_file, {'http': proxy,
+                             'https': proxy[:4] + 's' + proxy[4:]})

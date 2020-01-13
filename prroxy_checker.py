@@ -1,16 +1,17 @@
 import sys
 import requests
 import time
-from subprocess import run, PIPE, DEVNULL, call, Popen
 import concurrent.futures
 import os
 from termcolor import colored
 
 #
-# only usable for http and https proxies in linux
+# Usable in Windows, MacOS and Linux
+# Usable for SOCKS4, SOCKS5, HTTP and HTTPS proxies
 # requirments
-# python libraries : subprocess, termcolor
-# linux tool "curl"
+# $ pip install termcolor
+# $ pip install pysocks
+# $ pip install -U requests[socks]
 #
 
 
@@ -18,40 +19,76 @@ test_file = 'https://download.microsoft.com/download/8/b/4/8b4addd8-e957-4dea-bd
 test_file = 'http://ipv4.download.thinkbroadband.com/10MB.zip'
 # we download a file by requests.get
 
+test_url = 'https://api.ipify.org'
+connectionTimeOut = 25
+readTimeout = 45
+
 alive_proxies = []
 
 
 def is_alive(ip, port):
+    def socks4(ip, port):
+        try:
+            test_proxy = {'http': f'socks4://{ip}:{port}',
+                          'https': f'socks4://{ip}:{port}'}
+            r = requests.get(test_url, proxies=test_proxy,
+                             timeout=connectionTimeOut).text
+            print(r)
+            if r == ip:
+                alive_proxies.append(f'socks4://{ip}:{port}')
+                print(colored("Alive", "green"), f" socks4 proxy {ip}:{port}")
+                return True
+        except Exception as e:
+            return e
+
+    def socks5(ip, port):
+        try:
+            test_proxy = {'http': f'socks5://{ip}:{port}',
+                          'https': f'socks5://{ip}:{port}'}
+            r = requests.get(test_url, proxies=test_proxy,
+                             timeout=connectionTimeOut).text
+            print(r)
+            if r == ip:
+                alive_proxies.append(f'socks5://{ip}:{port}')
+                print(colored("Alive", "green"), f" socks5 proxy {ip}:{port}")
+                return True
+        except Exception as e:
+            return e
+
+    def http(ip, port):
+        try:
+            test_proxy = {'http': f'http://{ip}:{port}',
+                          'https': f'https://{ip}:{port}'}
+            r = requests.get(test_url, proxies=test_proxy,
+                             timeout=connectionTimeOut).text
+            print(r)
+            if r == ip:
+                alive_proxies.append(f'http://{ip}:{port}')
+                print(colored("Alive", "green"),
+                      f" http proxy {ip}:{port}")
+                return True
+        except Exception as e:
+            return e
+
     print(f"Testing proxy {ip}:{port}")
 
-    # the following code is a way to check the type of proxy and check wather it is alive
-    # https://stackoverflow.com/a/35382089/11672221
-    # the socks type won't be checked because seemes requests is not compatible with socks proxy
-    '''
-    result = run(f'curl -x socks://{ip}:{port} check-host.net/ip -m 15'.split(),
-                    stdout=DEVNULL, stderr=DEVNULL, universal_newlines=True)
-    if result.returncode == 0:
-        alive_proxies.append(f'socks5://{ip}:{port}')
-        print(colored("Alive", "green"), f" socks proxy {ip}:{port}")
+    if socks4(ip, port) == True:
         return
-    '''
-
-    result = run(f'curl -x http://{ip}:{port} check-host.net/ip -m 15'.split(),
-                 stdout=DEVNULL, stderr=DEVNULL, universal_newlines=True)
-    if result.returncode == 0:
-        alive_proxies.append(f'http://{ip}:{port}')
-        print(colored("Alive", "green"), f" http proxy {ip}:{port}")
+    elif socks5(ip, port) == True:
         return
-
-    print(colored("Dead", "red"), f" proxy {ip}:{port}")
+    elif http(ip, port) == True:
+        return
+    else:
+        print(colored("Dead", "red"), f" proxy {ip}:{port}")
 
 
 def downloadFile(link, proxy):
     chunk_value = 1024 * 512  # 512 kb
     print("=====================================================")
-    print(f"testing proxy: {proxy}")
+    print(f"testing speed: {proxy}")
     try:
-        r = requests.get(link, stream=True, proxies=proxy, timeout=(20, 45))
+        r = requests.get(link, stream=True, proxies=proxy,
+                         timeout=(connectionTimeOut, readTimeout))
         if r.status_code != 200:
             print(f"Error {r.status_code}")
             return
@@ -80,8 +117,9 @@ def downloadFile(link, proxy):
 
             time_spent = time.time() - start
             speed = dl / time_spent  # speed in bits
-            print("overall speed: ", speed / 1024,
-                  " Kbp    Time spent: ", time_spent, " seconds")
+            print(
+                f"overall speed: {speed / 1024} Kbp    Time spent: {time_spent} seconds")
+
     except requests.exceptions.ReadTimeout as e:
         print("ReadTimeout happend. This is related to test file not the proxy server. Try a different test file")
         print(e)

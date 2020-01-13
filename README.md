@@ -2,17 +2,17 @@
 
 ## Usage
 
-You should insert your proxies in `server:port` format per line into Proxies.txt.  
-Then run Proxy_checker.py  
+You should insert your proxies in `server:port` format per line into proxies.txt.  
+Then run prroxy_checker.py  
 
-- This program is not compatible with any OS but linux. We are trying to make this program usable for Windows OS
-- Note that you can't check **SOCKS proxies**, but you're ok with HTTP and HTTPS proxies.
-- Also proxies with authentications are not soppurted, yet.
+- This program is compatible with Windows, MacOS and Linux.
+- Usable for SOCKS4, SOCKS5, HTTP and HTTPS proxies.
+- Proxies with authentications are not soppurted, yet. We are trying to provide that in future.
 
 ## Requirements
 
 ```bash
-sudo apt install curl
-pip install subprocces
-pip install termcolor
+$ pip3 install termcolor
+$ pip3 install pysocks
+$ pip3 install -U requests[socks]
 ```

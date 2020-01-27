@@ -17,9 +17,9 @@ from termcolor import colored
 
 test_file = 'https://download.microsoft.com/download/8/b/4/8b4addd8-e957-4dea-bdb8-c4e00af5b94b/NDP1.1sp1-KB867460-X86.exe'
 test_file = 'http://ipv4.download.thinkbroadband.com/10MB.zip'
-# we download a file by requests.get
+# we download a file by requests.get to measure download speed of the proxy
 
-test_url = 'https://api.ipify.org'
+test_url = 'https://google.com'
 connectionTimeOut = 25
 readTimeout = 45
 
@@ -32,10 +32,9 @@ def is_alive(ip, port):
             test_proxy = {'http': f'socks4://{ip}:{port}',
                           'https': f'socks4://{ip}:{port}'}
             r = requests.get(test_url, proxies=test_proxy,
-                             timeout=connectionTimeOut).text
-            print(r)
-            if r == ip:
-                alive_proxies.append(f'socks4://{ip}:{port}')
+                             timeout=connectionTimeOut)
+            if r.status_code == 200:
+                alive_proxies.append(test_proxy)
                 print(colored("Alive", "green"), f" socks4 proxy {ip}:{port}")
                 return True
         except Exception as e:
@@ -46,10 +45,9 @@ def is_alive(ip, port):
             test_proxy = {'http': f'socks5://{ip}:{port}',
                           'https': f'socks5://{ip}:{port}'}
             r = requests.get(test_url, proxies=test_proxy,
-                             timeout=connectionTimeOut).text
-            print(r)
-            if r == ip:
-                alive_proxies.append(f'socks5://{ip}:{port}')
+                             timeout=connectionTimeOut)
+            if r.status_code == 200:
+                alive_proxies.append(test_proxy)
                 print(colored("Alive", "green"), f" socks5 proxy {ip}:{port}")
                 return True
         except Exception as e:
@@ -60,10 +58,9 @@ def is_alive(ip, port):
             test_proxy = {'http': f'http://{ip}:{port}',
                           'https': f'https://{ip}:{port}'}
             r = requests.get(test_url, proxies=test_proxy,
-                             timeout=connectionTimeOut).text
-            print(r)
-            if r == ip:
-                alive_proxies.append(f'http://{ip}:{port}')
+                             timeout=connectionTimeOut)
+            if r.status_code == 200:
+                alive_proxies.append(test_proxy)
                 print(colored("Alive", "green"),
                       f" http proxy {ip}:{port}")
                 return True
@@ -146,8 +143,7 @@ with concurrent.futures.ThreadPoolExecutor() as executer:
     # checking the type and availability of proxies at the same time using threads
     executer.map(check_proxies, proxies)
 
-print("Alive proxies are: ", alive_proxies)
+print("Alive proxies are: ", list(map(lambda x: x['http'][7:], alive_proxies)))
 
 for proxy in alive_proxies:
-    downloadFile(test_file, {'http': proxy,
-                             'https': proxy[:4] + 's' + proxy[4:]})
+    downloadFile(test_file, proxy)

@@ -3,7 +3,7 @@
 ## Usage
 
 You should insert your proxies in `server:port` format per line into proxies.txt.  
-Then run prroxy_checker.py  
+Then run checker.py  
 
 - This program is compatible with Windows, MacOS and Linux.
 - Usable for SOCKS4, SOCKS5, HTTP and HTTPS proxies.

@@ -5,7 +5,8 @@ import concurrent.futures
 
 
 def check_proxies(proxies):
-    ip, port = proxies.split(':')
+    protocol, ip, port = proxies.split(':') # TODO: use regex for this. when protocol is not present it introduces a new problem
+    ip = ip[2:]
     print(f"Testing proxy {ip}:{port}")
     proxy_result = is_alive(ip, port)
     if proxy_result['status'] != 'unavailable':
